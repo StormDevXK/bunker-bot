@@ -1,14 +1,15 @@
 from os import getenv
 from os.path import exists
+import asyncio
+
 from dotenv import load_dotenv
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+
 if exists(".env"):
     load_dotenv()
 
-BOT_TOKEN = getenv('BOT_TOKEN')
-
-import asyncio
-from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
+BOT_TOKEN: str = getenv('BOT_TOKEN')
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
