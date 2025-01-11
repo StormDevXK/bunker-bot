@@ -6,8 +6,9 @@ import datetime
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import Column, Integer, String, DateTime, select
 
 
 # Загрузка переменных окружения из файла .env, если он существует
@@ -16,10 +17,14 @@ if exists(".env"):
 
 
 # Инициализация SQLAlchemy для работы с базой данных
-users_engine = create_engine("sqlite:///users.db")
+users_engine = create_async_engine("sqlite+aiosqlite:///users.db", echo=True)
 Base = declarative_base()
-Session = sessionmaker(bind=users_engine)
-session = Session()
+# noinspection PyTypeChecker
+async_session_maker = sessionmaker(
+    bind=users_engine,  # Явное указание привязки к движку
+    class_=AsyncSession,  # Класс для асинхронных сессий
+    expire_on_commit=False
+)
 
 
 # Определение модели пользователя
@@ -35,8 +40,10 @@ class User(Base):
     joined_at = Column(DateTime, default=datetime.datetime.now)
 
 
-# Создание таблиц, если они еще не существуют
-Base.metadata.create_all(users_engine)
+# Создание таблиц при первом запуске
+async def init_db():
+    async with users_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
 # Чтение токен бота из переменной окружения
@@ -48,21 +55,28 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 
+# noinspection PyTypeChecker
 @dp.message(Command('start'))
 async def start(message: types.Message):
     await bot.send_message(message.chat.id, "Добро пожаловать в бункер!\nЧтобы начать играть нужно создать лобби \
 - /create\nИли подключится к уже созданному - /join <ID>\nЕсли возникнут вопросы - /help")
 
-    # Проверка на наличие пользователя в базе
-    existing_user = session.query(User).filter_by(user_id=message.from_user.id).first()
-    if not existing_user:
-        new_user = User(user_id=message.from_user.id,
-                        username=message.from_user.username,
-                        first_name=message.from_user.first_name,
-                        last_name=message.from_user.last_name,
-                        language_code=message.from_user.language_code)
-        session.add(new_user)
-    session.commit()
+    # Работа с асинхронной сессией
+    async with async_session_maker() as session:
+        query = select(User).where(User.user_id == message.from_user.id)
+        result = await session.execute(query)
+        existing_user = result.scalars().first()
+
+        if not existing_user:
+            new_user = User(
+                user_id=message.from_user.id,
+                username=message.from_user.username,
+                first_name=message.from_user.first_name,
+                last_name=message.from_user.last_name,
+                language_code=message.from_user.language_code
+            )
+            session.add(new_user)
+            await session.commit()
 
 
 @dp.message(Command('help'))
@@ -72,8 +86,10 @@ async def helps(message: types.Message):
 
 
 async def main():
+    await init_db()  # Инициализация базы данных
     print("Bot started")
     await dp.start_polling(bot)
+
 
 if __name__ == '__main__':
     asyncio.run(main())
