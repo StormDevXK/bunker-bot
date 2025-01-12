@@ -13,7 +13,6 @@ dp.message.register(start_handler, Command("start"))
 dp.message.register(help_handler, Command("help"))
 
 
-# Основной цикл
 async def main():
     await init_db()  # Инициализация базы данных
     print("Bot started")
