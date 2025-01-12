@@ -1,6 +1,6 @@
 import datetime
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.future import select
 
@@ -10,14 +10,14 @@ users_engine = create_async_engine(DATABASE_URL, echo=True)
 Base = declarative_base()
 
 # Настройка асинхронной сессии
-async_session_maker = sessionmaker(
-    bind=users_engine,
-    class_=AsyncSession,
+async_session_maker = async_sessionmaker(
+    bind=users_engine,  # Инициализация асинхронного движка базы данных
+    class_=AsyncSession,  # Класс для асинхронных сессий
     expire_on_commit=False
 )
 
 
-# Определение модели пользователя
+# Создание класса данных пользователя
 class UserData(Base):
     __tablename__ = "users_data"
 
