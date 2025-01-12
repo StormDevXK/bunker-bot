@@ -17,7 +17,7 @@ if exists(".env"):
 
 
 # Инициализация SQLAlchemy для работы с базой данных
-users_engine = create_async_engine("sqlite+aiosqlite:///users.db", echo=True)
+users_engine = create_async_engine("sqlite+aiosqlite:///bot.db", echo=True)
 Base = declarative_base()
 # noinspection PyTypeChecker
 async_session_maker = sessionmaker(
@@ -28,9 +28,8 @@ async_session_maker = sessionmaker(
 
 
 # Определение модели пользователя
-class User(Base):
-
-    __tablename__ = "users"
+class UserData(Base):
+    __tablename__ = "users_data"
 
     user_id = Column(Integer, primary_key=True)
     username = Column(String)
@@ -63,19 +62,19 @@ async def start(message: types.Message):
 
     # Работа с асинхронной сессией
     async with async_session_maker() as session:
-        query = select(User).where(User.user_id == message.from_user.id)
+        query = select(UserData).where(UserData.user_id == message.from_user.id)
         result = await session.execute(query)
         existing_user = result.scalars().first()
 
         if not existing_user:
-            new_user = User(
+            new_user_data = UserData(
                 user_id=message.from_user.id,
                 username=message.from_user.username,
                 first_name=message.from_user.first_name,
                 last_name=message.from_user.last_name,
                 language_code=message.from_user.language_code
             )
-            session.add(new_user)
+            session.add(new_user_data)
             await session.commit()
 
 
