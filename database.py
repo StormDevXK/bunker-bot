@@ -18,8 +18,8 @@ async_session_maker = async_sessionmaker(
 
 
 # Создание класса данных пользователя
-class UserData(Base):
-    __tablename__ = "users_data"
+class User(Base):
+    __tablename__ = "users"
 
     user_id = Column(Integer, primary_key=True)
     username = Column(String)
@@ -38,12 +38,12 @@ async def init_db():
 # Сохранение данных пользователя в бд, если их там нет
 async def save_user_data_to_db(message):
     async with async_session_maker() as session:
-        query = select(UserData).where(UserData.user_id == message.from_user.id)
+        query = select(User).where(User.user_id == message.from_user.id)
         result = await session.execute(query)
         existing_user = result.scalars().first()
 
         if not existing_user:
-            new_user_data = UserData(
+            new_user_data = User(
                 user_id=message.from_user.id,
                 username=message.from_user.username,
                 first_name=message.from_user.first_name,
