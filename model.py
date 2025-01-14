@@ -1,8 +1,6 @@
-import datetime
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, create_async_engine
+from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean
-from sqlalchemy.future import select
 
 # Инициализация SQLAlchemy для работы с базой данных
 DATABASE_URL = "sqlite+aiosqlite:///bot.db"
@@ -29,6 +27,7 @@ class User(Base):
 
     lobbies = relationship("LobbyPlayer", back_populates="user")
 
+
 # Модель для таблицы lobbies
 class Lobby(Base):
     __tablename__ = "lobbies"
@@ -40,6 +39,7 @@ class Lobby(Base):
 
     players = relationship("LobbyPlayer", back_populates="lobby")
     catastrophe = relationship("Catastrophe", back_populates="lobbies")
+
 
 # Модель для таблицы lobby_players
 class LobbyPlayer(Base):
@@ -68,6 +68,7 @@ class LobbyPlayer(Base):
     lobby = relationship("Lobby", back_populates="players")
     user = relationship("User", back_populates="lobbies")
 
+
 # Модель для таблицы characteristics
 class Characteristic(Base):
     __tablename__ = "characteristics"
@@ -76,6 +77,7 @@ class Characteristic(Base):
     type = Column(String(50), nullable=False)
     name = Column(String(100), nullable=False)
     description = Column(Text)
+
 
 # Модель для таблицы catastrophe
 class Catastrophe(Base):
@@ -87,27 +89,3 @@ class Catastrophe(Base):
     difficulty_level = Column(Integer, nullable=False)
 
     lobbies = relationship("Lobby", back_populates="catastrophe")
-
-
-# Иницализация
-async def init_db():
-    async with users_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-
-# Сохранение данных пользователя в бд, если их там нет
-async def save_user_data_to_db(message):
-    async with async_session_maker() as session:
-        query = select(User).where(User.telegram_id == message.from_user.id)
-        result = await session.execute(query)
-        existing_user = result.scalars().first()
-
-        if not existing_user:
-            new_user_data = User(
-                telegram_id=message.from_user.id,
-                username=message.from_user.username,
-                full_name=f"{message.from_user.first_name} {message.from_user.last_name}" if message.from_user.last_name else message.from_user.first_name,
-                created_at=datetime.datetime.now()
-            )
-            session.add(new_user_data)
-            await session.commit()

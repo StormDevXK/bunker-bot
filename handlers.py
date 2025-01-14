@@ -1,5 +1,5 @@
 from aiogram import types, Bot
-from database import save_user_data_to_db, create_lobby, join_lobby, exit_lobby
+from db_utils import save_user_data_to_db  # create_lobby, join_lobby, exit_lobby
 
 
 # Обработчик команды /start

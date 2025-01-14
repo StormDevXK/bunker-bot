@@ -3,7 +3,8 @@ from aiogram import Bot, Dispatcher
 from aiogram.filters import Command
 from utils import BOT_TOKEN
 from handlers import start_handler, help_handler, create_handler, join_handler, exit_handler
-from database import init_db
+from db_utils import init_db
+
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
